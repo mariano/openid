@@ -257,7 +257,7 @@ class OpenAuthComponent extends AuthComponent {
 				case Auth_OpenID_FAILURE:
 					$error = sprintf(__('OpenID authentication failed: %s', true), $response->message);
 					break;
-			}echo $error; exit;
+			}
 			throw new Exception($error);
 		}
 
