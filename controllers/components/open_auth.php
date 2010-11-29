@@ -18,6 +18,10 @@
 
 set_include_path(get_include_path() . ':' . VENDORS . ':' . APP . 'vendors' . DS);
 
+if (!defined('Auth_OpenID_RAND_SOURCE')) {
+    define('Auth_OpenID_RAND_SOURCE', null);
+}
+
 App::import('Core', 'Email');
 App::import('Component', 'Auth');
 App::import('Vendor', 'Auth_OpenID', array('file' => 'Auth'.DS.'OpenID.php'));
@@ -50,7 +54,7 @@ class OpenAuthComponent extends AuthComponent {
  * Leave empty to use $loginAction.
  *
  * @var array
- */	
+ */
 	public $callbackAction = null;
 /**
  * Parameter added to $callbackAction to check that we are in a valid callback call
@@ -77,19 +81,19 @@ class OpenAuthComponent extends AuthComponent {
  * Mandatory fields to request in the OpenID transaction
  *
  * @var array
- */	
+ */
 	public $requestMandatoryFields = array('username');
 /**
  * Optional fields to request in the OpenID transaction
  *
  * @var array
- */	
+ */
 	public $requestOptionalFields = array('name', 'email');
 /**
  * Temporary directory used by the php-openid library
  *
  * @var string
- */	
+ */
 	public $tmp = CACHE;
 /**
  * Initializes the component for use in the controller
@@ -142,10 +146,10 @@ class OpenAuthComponent extends AuthComponent {
 		$alias = $this->getModel()->alias;
 		$isValid = !empty($controller->data[$alias][$this->fields['openid']]);
 
-		$callbackUrl = Router::url($this->callbackAction, true);
-		if (!empty($this->callbackParameter)) {
-			$callbackUrl .= (strpos($callbackAction, '?') === false ? '?' : '&') . $this->callbackParameter;
-		}
+        $callbackUrl = Router::url($this->callbackAction, true);
+        if (!empty($this->callbackParameter)) {
+            $callbackUrl .= (strpos($callbackAction, '?') === false ? '?' : '&') . $this->callbackParameter;
+        }
 
 		if ($loginAction == $url && !empty($controller->data) && $isValid && !$result) {
 			$this->Session->delete('Message.auth');
@@ -222,29 +226,11 @@ class OpenAuthComponent extends AuthComponent {
 			$this->controller->redirect($redirectUrl);
 		} else {
 			$id = 'openid';
-			$html = $authRequest->htmlMarkup($rootUrl, $callbackUrl, false, compact('id'));
+			$html = $authRequest->htmlMarkup($rootUrl, $callbackUrl);
 			if (Auth_OpenID::isFailure($html)) {
 				throw new Exception(sprintf(__('Could not redirect to server: %s', true), $html->message));
 			}
-			echo '
-			<html>
-			<head>
-			<title>' . __('Authenticating through OpenID') . '</title>
-			<script type="text/javascript">
-			function get(id) {
-				if (typeof document.getElementById != "undefined") {
-					return document.getElementById(id);
-				} else if (typeof document.all != "undefined") {
-					return document.all[id];
-				} else if (typeof document.layers != "undefined") {
-					return document.layers[id];
-				}
-				return null;
-			}
-			</script>
-			</head>
-			<body onload="get("' . $id . '").submit();">' . $html . '</body>
-			</html>';
+            echo $html;
 			$this->_stop();
 		}
 	}
@@ -260,6 +246,7 @@ class OpenAuthComponent extends AuthComponent {
 		if (!empty($this->callbackParameter)) {
 			$ignore[$this->callbackParameter] = null;
 		}
+
 		$response = $this->_getConsumer()->complete($callbackUrl, array_diff_key(Auth_OpenID::getQuery(), $ignore));
 		if ($response->status != Auth_OpenID_SUCCESS) {
 			$error = __('Unknown error', true);
@@ -270,7 +257,7 @@ class OpenAuthComponent extends AuthComponent {
 				case Auth_OpenID_FAILURE:
 					$error = sprintf(__('OpenID authentication failed: %s', true), $response->message);
 					break;
-			}
+			}echo $error; exit;
 			throw new Exception($error);
 		}
 
